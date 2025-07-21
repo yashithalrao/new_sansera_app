@@ -1,32 +1,3 @@
-// import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-// import Login from './pages/Login';
-// import Signup from './pages/Signup';
-// import Dashboard from './pages/Dashboard';
-// import ProtectedRoute from './routes/ProtectedRoute';
-// import { AuthProvider } from './context/authContext';
-
-// function App() {
-//   return (
-//     <AuthProvider>
-//       <Router>
-//         <Routes>
-//           <Route path="/" element={<Login />} />
-//           <Route path="/signup" element={<Signup />} />
-//           <Route
-//             path="/dashboard"
-//             element={
-//               <ProtectedRoute>
-//                 <Dashboard />
-//               </ProtectedRoute>
-//             }
-//           />
-//         </Routes>
-//       </Router>
-//     </AuthProvider>
-//   );
-// }
-
-// export default App;
 
 
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
@@ -35,23 +6,22 @@ import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
 import MyTasks from './pages/MyTasks';
 import AllTasks from './pages/AllTasks';
+import EnterTask from './pages/EnterTask';
+import Reports from './pages/Reports';
+import AllUsers from './pages/AllUsers'; // ✅ NEW
 import ProtectedRoute from './routes/ProtectedRoute';
 import { AuthProvider } from './context/authContext';
 import Navbar from './components/Navbar';
 
-// dummy EnterTask and Reports for now (create these files later)
-import EnterTask from './pages/EnterTask';
-import Reports from './pages/Reports';
-
 function App() {
   return (
-    
-      <Router>
-        <AuthProvider>
+    <Router>
+      <AuthProvider>
         <Navbar />
         <Routes>
           <Route path="/" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
+          
           <Route
             path="/dashboard"
             element={
@@ -92,10 +62,17 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/users"
+            element={
+              <ProtectedRoute requiredRole="admin">
+                <AllUsers />
+              </ProtectedRoute>
+            }
+          />
         </Routes>
-        </AuthProvider>
-      </Router>
-    
+      </AuthProvider>
+    </Router>
   );
 }
 

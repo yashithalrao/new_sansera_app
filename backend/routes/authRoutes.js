@@ -6,21 +6,34 @@ const User = require('../models/User');
 const router = express.Router();
 
 // Signup
-router.post('/signup', async (req, res) => {
-  const { email, password, role } = req.body;
-  try {
-    const exists = await User.findOne({ email });
-    if (exists) return res.status(400).json({ message: 'User already exists' });
 
-    const hash = await bcrypt.hash(password, 10);
-    const user = new User({ email, password: hash, role });
-    await user.save();
+router.post('/signup', async (req, res) => {
+  const { email, password, username } = req.body;
+
+
+  try {
+
+
+    const exists = await User.findOne({ $or: [{ email }, { username }] });
+if (exists) return res.status(400).json({ message: 'Email or username already exists' });
+
+const hash = await bcrypt.hash(password, 10);
+
+// Check if any admin exists
+const adminExists = await User.exists({ role: 'admin' });
+const role = adminExists ? 'user' : 'admin';
+
+const user = new User({ email, username, password: hash, role });
+await user.save();
+
 
     res.status(201).json({ message: 'User created' });
   } catch (err) {
     res.status(500).json({ message: 'Server error' });
   }
 });
+
+
 
 // Login
 router.post('/login', async (req, res) => {
@@ -34,7 +47,7 @@ router.post('/login', async (req, res) => {
 
     // const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1d' });
     const token = jwt.sign(
-  { id: user._id, role: user.role }, // ✅ include role
+  { id: user._id, role: user.role,username: user.username }, // ✅ include role
   process.env.JWT_SECRET,
   { expiresIn: '1d' }
 );
@@ -45,7 +58,8 @@ router.post('/login', async (req, res) => {
       user: {
         id: user._id,
         email: user.email,
-        role: user.role
+        role: user.role, 
+        username: user.username
       }
     });
   } catch (err) {
@@ -53,29 +67,47 @@ router.post('/login', async (req, res) => {
   }
 });
 
+
+
+const { authenticate } = require('../middleware/authMiddleware');
+const { isAdmin } = require('../middleware/authMiddleware');
+router.get('/users', authenticate, isAdmin, async (req, res) => {
+  try {
+    const users = await User.find({}, 'email role'); // send only safe fields
+    res.json(users);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+router.put('/users/:id/promote', authenticate, isAdmin, async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    user.role = 'admin';
+    await user.save();
+
+    res.json({ message: 'User promoted to admin' });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+
+// DELETE user (admin only)
+router.delete('/users/:id', authenticate, isAdmin, async (req, res) => {
+  try {
+    const user = await User.findByIdAndDelete(req.params.id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    res.json({ message: 'User deleted successfully' });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+
+
 module.exports = router;
 
 
-
-// const jwt = require('jsonwebtoken');
-// const User = require('../models/User');
-
-// exports.authenticate = async (req, res, next) => {
-//   const token = req.headers.authorization?.split(' ')[1];
-//   if (!token) return res.status(401).json({ message: 'Missing token' });
-
-//   try {
-//     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-//     req.user = await User.findById(decoded.id).select('-password');
-//     next();
-//   } catch {
-//     res.status(401).json({ message: 'Invalid token' });
-//   }
-// };
-
-// exports.authorizeRoles = (...roles) => {
-//   return (req, res, next) => {
-//     if (!roles.includes(req.user.role)) return res.status(403).json({ message: 'Access denied' });
-//     next();
-//   };
-// };

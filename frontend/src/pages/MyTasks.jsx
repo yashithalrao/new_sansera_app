@@ -11,8 +11,7 @@ export default function MyTasks() {
   useEffect(() => {
     const fetchTasks = async () => {
       try {
-        const res = await axios.get('/tasks/my'); // ✅
-;
+        const res = await axios.get('/tasks/my');
         setTasks(res.data);
       } catch (err) {
         console.error("Failed to fetch tasks:", err);
@@ -40,11 +39,22 @@ export default function MyTasks() {
   return (
     <div>
       <h2>My Tasks</h2>
-      <TaskList
-        tasks={tasks}
-        onEdit={setEditTask}
-        onDelete={handleDelete}
-      />
+
+{editTask && (
+  <TaskForm
+    editTask={editTask}              // ✅ This prop name must be `editTask`
+    onTaskUpdated={handleTaskUpdated}
+  />
+)}
+
+<TaskList
+  tasks={tasks}
+  onDelete={handleDelete}
+  onEdit={setEditTask}          // ✅ This allows TaskList to trigger edits
+  onEditComplete={handleTaskUpdated}
+/>
+
+
     </div>
   );
 }

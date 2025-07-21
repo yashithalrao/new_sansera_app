@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from '../api/axios';
-import '../App.css'
+import '../App.css';
 import {
   PieChart, Pie, Cell,
   Tooltip as RechartTooltip, Legend,
@@ -48,7 +48,7 @@ export default function Report() {
     a.click();
   };
 
-  const COLORS = ['#ff6b6b', '#ffe66d', '#06d6a0'];
+  const COLORS = ['#3ba4b7ff', '#e4da17ff', '#1ac76eff'];
 
   const statusData = [
     { name: 'Pending', value: tasks.filter(t => t.status === 'Pending').length },
@@ -63,34 +63,16 @@ export default function Report() {
   }));
 
   return (
-    <div style={{
-      backgroundColor: '#121212',
-      padding: '40px',
-      minHeight: '100vh',
-      fontFamily: 'Segoe UI',
-      color: '#e0e0e0'
-    }}>
-      <h2 style={{ marginBottom: '20px', color: '#ffffff' }}>📋 Admin Report</h2>
+    <div style={pageStyle}>
+      <h2 style={headerStyle}>📋 Admin Report</h2>
 
       <div style={{ marginBottom: '30px' }}>
-        <button
-          onClick={exportCSV}
-          style={{
-            background: '#00ff88',
-            color: '#000',
-            padding: '10px 20px',
-            border: 'none',
-            borderRadius: '6px',
-            cursor: 'pointer',
-            fontWeight: 'bold',
-            boxShadow: '0 0 10px #00ff8870'
-          }}
-        >
+        <button onClick={exportCSV} style={exportButtonStyle}>
           Export to CSV
         </button>
       </div>
 
-      <div style={{ display: 'flex', gap: '40px', flexWrap: 'wrap', justifyContent: 'center' }}>
+      <div style={chartContainerStyle}>
         <div style={cardStyle}>
           <h3 style={cardTitle}>Task Status Distribution</h3>
           <PieChart width={300} height={300}>
@@ -99,7 +81,7 @@ export default function Report() {
                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
               ))}
             </Pie>
-            <RechartTooltip contentStyle={{ backgroundColor: '#333', border: 'none', color: '#fff' }} />
+            <RechartTooltip contentStyle={tooltipStyle} />
             <Legend />
           </PieChart>
         </div>
@@ -107,18 +89,18 @@ export default function Report() {
         <div style={cardStyle}>
           <h3 style={cardTitle}>Planned vs Actual Hours</h3>
           <BarChart width={500} height={300} data={barData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#444" />
-            <XAxis dataKey="name" stroke="#ccc" />
-            <YAxis stroke="#ccc" />
-            <Tooltip contentStyle={{ backgroundColor: '#333', border: 'none', color: '#fff' }} />
+            <CartesianGrid strokeDasharray="3 3" stroke="#ccc" />
+            <XAxis dataKey="name" stroke="#333" />
+            <YAxis stroke="#333" />
+            <Tooltip contentStyle={tooltipStyle} />
             <Legend />
-            <Bar dataKey="planned" fill="#00bcd4" />
-            <Bar dataKey="actual" fill="#d81b60" />
+            <Bar dataKey="planned" fill="#0529f4ff" />
+            <Bar dataKey="actual" fill="#55e0d0ff" />
           </BarChart>
         </div>
       </div>
 
-      <div style={{ marginTop: '50px', overflowX: 'auto' }}>
+      <div style={tableContainerStyle}>
         <h3 style={cardTitle}>Task Table</h3>
         <table style={tableStyle}>
           <thead>
@@ -150,26 +132,75 @@ export default function Report() {
   );
 }
 
+// --- Styles ---
+
+const pageStyle = {
+  backgroundColor: '#f5faff',
+  padding: '40px',
+  minHeight: '100vh',
+  fontFamily: 'Segoe UI',
+  color: '#003366'
+};
+
+const headerStyle = {
+  marginBottom: '20px',
+  color: '#0056b3'
+};
+
+const exportButtonStyle = {
+  background: '#007bff',
+  color: '#fff',
+  padding: '10px 20px',
+  border: 'none',
+  borderRadius: '6px',
+  cursor: 'pointer',
+  fontWeight: 'bold',
+  boxShadow: '0 2px 6px rgba(0, 123, 255, 0.3)'
+};
+
+const chartContainerStyle = {
+  display: 'flex',
+  gap: '40px',
+  flexWrap: 'wrap',
+  justifyContent: 'center'
+};
+
 const cardStyle = {
-  background: '#1e1e1e',
+  background: '#ffffff',
   padding: '20px',
   borderRadius: '10px',
-  boxShadow: '0 0 12px rgba(0,255,136,0.05)',
+  boxShadow: '0 2px 10px rgba(0,0,0,0.08)',
   flex: '1 1 40%',
   maxWidth: '600px'
 };
 
 const cardTitle = {
   marginBottom: '16px',
-  color: '#e0e0e0'
+  color: '#003366'
+};
+
+const tooltipStyle = {
+  backgroundColor: '#ffffff',
+  border: '1px solid #ccc',
+  color: '#333'
+};
+
+const tableContainerStyle = {
+  marginTop: '50px',
+  overflowX: 'auto'
 };
 
 const tableStyle = {
   width: '100%',
   borderCollapse: 'collapse',
-  background: '#1a1a1a',
-  color: '#e0e0e0',
+  background: '#fff',
+  color: '#333',
   borderRadius: '8px',
-  overflow: 'hidden',
-  boxShadow: '0 0 8px rgba(0,255,136,0.05)'
+  boxShadow: '0 0 8px rgba(0,0,0,0.05)'
+};
+
+tableStyle['th'] = tableStyle['td'] = {
+  border: '1px solid #ddd',
+  padding: '10px',
+  textAlign: 'left'
 };

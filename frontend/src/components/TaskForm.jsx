@@ -1,6 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
-import axios from '../api/axios';
+import api from '../api/axios';
+import { useAuth } from '../context/authContext';
 
 const initialTask = {
   slNo: '',
@@ -14,9 +14,7 @@ const initialTask = {
   start: '',
   end: '',
   plannedHrs: '',
-  actualHrs: '',
   status: '',
-  daysTaken: '',
   remarks: ''
 };
 
@@ -24,6 +22,8 @@ const editableFields = Object.keys(initialTask);
 
 export default function TaskForm({ onTaskCreated, editTask, onTaskUpdated }) {
   const [task, setTask] = useState(initialTask);
+  const [users, setUsers] = useState([]);
+  const { user } = useAuth(); // from context
 
   useEffect(() => {
     if (editTask) {
@@ -37,6 +37,20 @@ export default function TaskForm({ onTaskCreated, editTask, onTaskUpdated }) {
     }
   }, [editTask]);
 
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        
+        const res = await api.get('/auth/users'); // ✅
+        setUsers(res.data);
+      } catch (err) {
+        console.error('Failed to fetch users for personHandling', err);
+      }
+    };
+
+    if (user?.role === 'admin') fetchUsers();
+  }, [user]);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setTask(prev => ({ ...prev, [name]: value }));
@@ -49,29 +63,28 @@ export default function TaskForm({ onTaskCreated, editTask, onTaskUpdated }) {
         ...task,
         slNo: Number(task.slNo),
         plannedHrs: Number(task.plannedHrs),
-        actualHrs: Number(task.actualHrs),
-        daysTaken: task.daysTaken ? Number(task.daysTaken) : undefined,
         start: new Date(task.start),
-        end: new Date(task.end),
+        end: new Date(task.end)
       };
 
+      let res;
       if (editTask?._id) {
-        const res = await axios.put(`/tasks/${editTask._id}`, payload);
+        res = await api.put(`/tasks/${editTask._id}`, payload);
         onTaskUpdated(res.data);
       } else {
-        const res = await axios.post('/tasks', payload);
+        res = await api.post('/tasks', payload);
         onTaskCreated(res.data);
       }
 
-      setTask(initialTask); // reset form
+      setTask(initialTask);
     } catch (err) {
-      console.error("Error saving task:", err);
+      console.error("❌ Error saving task:", err);
     }
   };
 
   return (
     <div style={card}>
-      <h3 style={{ color: '#fff', marginBottom: '20px' }}>
+      <h3 style={{ color: 'blue', marginBottom: '35px' }}>
         {editTask ? "✏️ Edit Task" : "➕ Add Task"}
       </h3>
 
@@ -92,28 +105,27 @@ export default function TaskForm({ onTaskCreated, editTask, onTaskUpdated }) {
                 <option value="Ongoing">Ongoing</option>
                 <option value="Completed">Completed</option>
               </select>
-            ) : key === 'start' || key === 'end' ? (
+            ) : key === 'personHandling' && user?.role === 'admin' ? (
+              <select name="personHandling" value={task.personHandling} onChange={handleChange} style={select} required>
+                <option value="">Assign to</option>
+                {users.map(u => (
+                  <option key={u._id} value={u.email}>
+                    {u.email}
+                  </option>
+                ))}
+              </select>
+            ) : ['start', 'end'].includes(key) ? (
               <input
                 type="date"
                 name={key}
-                value={task[key].slice(0, 10)}
+                value={task[key]?.slice(0, 10)}
                 onChange={handleChange}
                 style={input}
                 required
               />
-            ) : ['slNo', 'plannedHrs', 'actualHrs', 'daysTaken'].includes(key) ? (
-              <input
-                type="number"
-                name={key}
-                value={task[key]}
-                onChange={handleChange}
-                placeholder={key}
-                style={input}
-                required={key !== 'daysTaken'}
-              />
             ) : (
               <input
-                type="text"
+                type={['slNo', 'plannedHrs'].includes(key) ? 'number' : 'text'}
                 name={key}
                 value={task[key]}
                 onChange={handleChange}
@@ -124,45 +136,59 @@ export default function TaskForm({ onTaskCreated, editTask, onTaskUpdated }) {
             )}
           </div>
         ))}
+
         <button type="submit" style={button}>
           {editTask ? "Update Task" : "Add Task"}
         </button>
       </form>
+
+      {editTask?.status === 'Completed' && (
+        <div style={{ marginTop: '20px', color: '#fff' }}>
+          <p><strong>📅 Actual Completed Date:</strong> {new Date(editTask.actualCompletedDate).toLocaleDateString()}</p>
+          <p><strong>🕒 Actual Hours:</strong> {editTask.actualHrs}</p>
+          <p><strong>📆 Days Taken:</strong> {editTask.daysTaken}</p>
+        </div>
+      )}
     </div>
   );
 }
 
+// --- Styles ---
+// --- Styles ---
 const card = {
-  background: '#1e1e1e',
-  color: '#fff',
+  backgroundColor: '#ffffff',
   padding: '30px',
   borderRadius: '12px',
-  maxWidth: '700px',
-  margin: '0 auto 30px',
-  boxShadow: '0 0 20px rgba(0,0,0,0.4)'
+  maxWidth: '600px',
+  margin: 'auto',
+  boxShadow: '0 0 12px rgba(0, 102, 204, 0.15)',
+  color: '#0a1d37',
 };
 
 const input = {
   width: '100%',
   padding: '10px',
   borderRadius: '6px',
-  border: '1px solid #333',
-  backgroundColor: '#2c2c2c',
-  color: '#fff'
+  border: '1px solid #cce0ff',
+  backgroundColor: '#f7fbff',
+  color: '#0a1d37',
+  fontSize: '1rem',
 };
 
 const select = {
   ...input,
-  backgroundColor: '#2c2c2c'
 };
 
 const button = {
-  padding: '12px 20px',
-  backgroundColor: '#4CAF50',
-  color: '#fff',
+  marginTop: '20px',
+  padding: '12px 24px',
+  backgroundColor: '#007bff',
+  color: '#ffffff',
   border: 'none',
-  borderRadius: '8px',
-  marginTop: '15px',
+  borderRadius: '6px',
   cursor: 'pointer',
-  fontWeight: 'bold'
+  fontWeight: 'bold',
+  fontSize: '1rem',
+  boxShadow: '0 0 8px rgba(0, 123, 255, 0.3)',
 };
+
